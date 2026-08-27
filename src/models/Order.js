@@ -40,8 +40,10 @@ const orderSchema = new Schema(
     },
     payment: {
       method: { type: String, enum: ['webpay', 'mercadopago'], required: true },
-      status: { type: String, default: 'simulated_paid' },
+      status: { type: String, default: 'pending' }, // pending | approved | rejected | simulated_paid
       amount: { type: Number, required: true },
+      preferenceId: String,
+      paymentId: String,
     },
     subtotal: { type: Number, required: true },
     total: { type: Number, required: true },

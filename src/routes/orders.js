@@ -13,6 +13,15 @@ router.get(
   }),
 )
 
+router.get(
+  '/:id',
+  asyncHandler(async (req, res) => {
+    const order = await Order.findById(req.params.id)
+    if (!order) return res.status(404).json({ error: 'Pedido no encontrado' })
+    res.json(order)
+  }),
+)
+
 router.post(
   '/',
   asyncHandler(async (req, res) => {
@@ -53,6 +62,10 @@ router.post(
     const deliveryFee = fulfillment === 'delivery' ? Number(delivery?.fee || 0) : 0
     const total = subtotal + deliveryFee
 
+    // El pago con Mercado Pago se confirma después, vía webhook (ver
+    // routes/payments.js). El de Webpay sigue simulado por ahora.
+    const initialPaymentStatus = payment?.method === 'webpay' ? 'simulated_paid' : 'pending'
+
     const order = await Order.create({
       items: orderItems,
       fulfillment,
@@ -60,7 +73,7 @@ router.post(
       customer,
       address: fulfillment === 'delivery' ? address : '',
       delivery: fulfillment === 'delivery' ? { ...delivery, fee: deliveryFee } : undefined,
-      payment: { ...payment, amount: total, status: 'simulated_paid' },
+      payment: { method: payment?.method, amount: total, status: initialPaymentStatus },
       subtotal,
       total,
     })
