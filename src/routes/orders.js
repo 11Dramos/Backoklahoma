@@ -55,6 +55,7 @@ router.post(
         name: product.name,
         price: product.price,
         qty: i.qty,
+        note: i.note || '',
       }
     })
 

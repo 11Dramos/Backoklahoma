@@ -1,4 +1,4 @@
-name: Deploy backend to Azure App Service
+name: Deploy backend + front to Azure App Service
 
 on:
   push:
@@ -15,14 +15,33 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install dependencies
+      - name: Install backend dependencies
         run: npm ci --omit=dev
+
+      - name: Checkout front
+        uses: actions/checkout@v4
+        with:
+          repository: 11Dramos/frontoklahoma
+          path: front-src
+
+      - name: Build front
+        working-directory: front-src
+        env:
+          VITE_API_URL: https://oklahoma-rg-bdbbdmcfb0bsfgay.brazilsouth-01.azurewebsites.net
+        run: |
+          npm ci
+          npm run build
+
+      - name: Copy front build into backend's public/
+        run: |
+          mkdir -p public
+          cp -r front-src/dist/. public/
 
       - name: Zip and deploy via Kudu ZipDeploy
         env:
           PUBLISH_PROFILE: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
         run: |
-          zip -r app.zip . -x ".git/*" -x ".github/*"
+          zip -r app.zip . -x ".git/*" -x ".github/*" -x "front-src/*"
 
           USERNAME=$(echo "$PUBLISH_PROFILE" | grep -oP 'userName="\K[^"]+' | head -1)
           PASSWORD=$(echo "$PUBLISH_PROFILE" | grep -oP 'userPWD="\K[^"]+' | head -1)
