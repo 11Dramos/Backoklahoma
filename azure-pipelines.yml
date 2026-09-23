@@ -33,9 +33,9 @@ stages:
               npm ci
               npm run build
             displayName: 'Instalar dependencias y compilar el front'
-            workingDirectory: '$(Pipeline.Workspace)/s/front'
+            workingDirectory: '$(Pipeline.Workspace)/front'
 
-          - publish: '$(Pipeline.Workspace)/s/front/dist'
+          - publish: '$(Pipeline.Workspace)/front/dist'
             artifact: front-dist
 
       - job: BuildBack
@@ -50,9 +50,9 @@ stages:
 
           - script: npm ci --omit=dev
             displayName: 'Instalar dependencias del backend'
-            workingDirectory: '$(Pipeline.Workspace)/s/back'
+            workingDirectory: '$(Pipeline.Workspace)/back'
 
-          - publish: '$(Pipeline.Workspace)/s/back'
+          - publish: '$(Pipeline.Workspace)/back'
             artifact: back-app
 
   - stage: Deploy
