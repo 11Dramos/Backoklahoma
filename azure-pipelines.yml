@@ -7,8 +7,6 @@ resources:
       type: git
       name: 'Oklahoma Burgers/Oklahoma Front'
       ref: main
-      trigger:
-        - main
 
 pool:
   vmImage: 'ubuntu-latest'
