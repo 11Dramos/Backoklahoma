@@ -49,8 +49,19 @@ stages:
           - script: npm run lint
             displayName: 'Lint (malas practicas)'
 
-          - script: npm test
-            displayName: 'Ejecutar tests'
+          - script: npm run test:coverage
+            displayName: 'Ejecutar tests con cobertura'
+
+          - task: PublishCodeCoverageResults@2
+            condition: succeededOrFailed()
+            inputs:
+              summaryFileLocation: '$(System.DefaultWorkingDirectory)/coverage/cobertura-coverage.xml'
+            displayName: 'Publicar cobertura en Azure'
+
+          - publish: '$(System.DefaultWorkingDirectory)/coverage'
+            artifact: coverage-back
+            condition: succeededOrFailed()
+            displayName: 'Publicar reporte HTML de cobertura'
 
   - stage: Package
     displayName: 'Empaquetar back + front'
