@@ -2,6 +2,7 @@ import { Router } from 'express'
 import Order, { ORDER_STATUSES } from '../models/Order.js'
 import Product from '../models/Product.js'
 import { asyncHandler } from '../utils/asyncHandler.js'
+import { calcOrderTotals } from '../utils/pricing.js'
 
 const router = Router()
 
@@ -59,9 +60,7 @@ router.post(
       }
     })
 
-    const subtotal = orderItems.reduce((sum, i) => sum + i.price * i.qty, 0)
-    const deliveryFee = fulfillment === 'delivery' ? Number(delivery?.fee || 0) : 0
-    const total = subtotal + deliveryFee
+    const { subtotal, deliveryFee, total } = calcOrderTotals(orderItems, fulfillment, delivery?.fee)
 
     // El pago con Mercado Pago se confirma después, vía webhook (ver
     // routes/payments.js). El de Webpay sigue simulado por ahora.
