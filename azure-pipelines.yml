@@ -1,63 +1,85 @@
+# Pipeline del back: prueba, empaqueta y es el UNICO que despliega a Azure.
+# Se dispara por un commit al back o cuando el pipeline "Oklahoma Front"
+# termina bien (asi cada cambio de front tambien llega a produccion).
 trigger:
-  - main
+  branches:
+    include:
+      - main
+
+pr:
+  branches:
+    include:
+      - main
 
 resources:
-  repositories:
-    - repository: front
-      type: git
-      name: 'Oklahoma Burgers/Oklahoma Front'
-      ref: main
+  pipelines:
+    - pipeline: front
+      source: 'Oklahoma Front'
+      trigger:
+        branches:
+          include:
+            - main
 
 pool:
   vmImage: 'ubuntu-latest'
 
 variables:
-  # Nombre de la conexion de servicio a Azure creada en Project Settings > Service connections.
+  # Conexion de servicio creada en Project Settings > Service connections.
   azureSubscription: 'oklahoma-azure-connection'
   webAppName: 'oklahoma-rg'
 
 stages:
-  - stage: Build
+  - stage: Test
+    displayName: 'Pruebas del back'
     jobs:
-      - job: BuildFront
+      - job: Test
         steps:
-          - checkout: front
-            path: front
-
           - task: NodeTool@0
             inputs:
-              versionSpec: '20.x'
+              versionSpec: '22.x'
             displayName: 'Instalar Node.js'
 
-          - script: |
-              npm ci
-              npm run build
-            displayName: 'Instalar dependencias y compilar el front'
-            workingDirectory: '$(Pipeline.Workspace)/front'
+          - script: npm ci
+            displayName: 'Instalar dependencias'
 
-          - publish: '$(Pipeline.Workspace)/front/dist'
-            artifact: front-dist
+          - script: npm test
+            displayName: 'Ejecutar tests'
 
-      - job: BuildBack
+  - stage: Package
+    displayName: 'Empaquetar back + front'
+    dependsOn: Test
+    jobs:
+      - job: Package
         steps:
-          - checkout: self
-            path: back
+          - download: front
+            artifact: front-dist
+            displayName: 'Descargar build del front'
 
           - task: NodeTool@0
             inputs:
-              versionSpec: '20.x'
+              versionSpec: '22.x'
             displayName: 'Instalar Node.js'
 
           - script: npm ci --omit=dev
-            displayName: 'Instalar dependencias del backend'
-            workingDirectory: '$(Pipeline.Workspace)/back'
+            displayName: 'Instalar dependencias de produccion'
 
-          - publish: '$(Pipeline.Workspace)/back'
-            artifact: back-app
+          - script: |
+              set -e
+              out="$(Build.ArtifactStagingDirectory)/app"
+              mkdir -p "$out"
+              rsync -a --exclude '.git' --exclude 'test' --exclude 'azure-pipelines.yml' ./ "$out/"
+              mkdir -p "$out/public"
+              cp -r "$(Pipeline.Workspace)/front/front-dist/." "$out/public/"
+            displayName: 'Armar paquete (back + front en /public)'
+
+          - publish: '$(Build.ArtifactStagingDirectory)/app'
+            artifact: app
+            displayName: 'Publicar paquete'
 
   - stage: Deploy
-    dependsOn: Build
-    condition: succeeded()
+    displayName: 'Desplegar a Azure'
+    dependsOn: Package
+    condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
     jobs:
       - deployment: DeployToAzure
         environment: 'produccion-azure'
@@ -65,15 +87,20 @@ stages:
           runOnce:
             deploy:
               steps:
-                - script: |
-                    mkdir -p $(Pipeline.Workspace)/back-app/public
-                    cp -r $(Pipeline.Workspace)/front-dist/. $(Pipeline.Workspace)/back-app/public/
-                  displayName: 'Copiar el build del front dentro del backend'
-
                 - task: AzureWebApp@1
                   inputs:
                     azureSubscription: '$(azureSubscription)'
                     appType: 'webAppLinux'
                     appName: '$(webAppName)'
-                    package: '$(Pipeline.Workspace)/back-app'
+                    package: '$(Pipeline.Workspace)/app'
                   displayName: 'Desplegar a Azure App Service'
+
+                - script: |
+                    for i in 1 2 3 4 5 6; do
+                      code=$(curl -s -o /dev/null -w '%{http_code}' https://oklahoma-rg-bdbbdmcfb0bsfgay.brazilsouth-01.azurewebsites.net/api/health || true)
+                      echo "Intento $i: HTTP $code"
+                      [ "$code" = "200" ] && exit 0
+                      sleep 20
+                    done
+                    echo "El despliegue no responde en /api/health"; exit 1
+                  displayName: 'Verificar que la app responde'
