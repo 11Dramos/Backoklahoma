@@ -1,0 +1,13 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "categories": { "correctness": "error" },
+  "rules": {
+    "eqeqeq": "error",
+    "no-var": "error",
+    "prefer-const": "error",
+    "no-debugger": "error",
+    "no-eval": "error",
+    "no-alert": "error",
+    "no-unused-vars": "error"
+  }
+}
