@@ -25,14 +25,22 @@ for (const file of staged) {
 }
 
 const SECRET_PATTERNS = [
-  [/mongodb(\+srv)?:\/\/[^:\s'"]+:[^@\s'"]+@/i, 'cadena de conexion de MongoDB con usuario y clave'],
+  [
+    /mongodb(\+srv)?:\/\/[^:\s'"]+:[^@\s'"]+@/i,
+    'cadena de conexion de MongoDB con usuario y clave',
+  ],
   [/APP_USR-[0-9a-f-]{16,}/i, 'token de Mercado Pago'],
   [/-----BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY-----/, 'llave privada'],
   [/AKIA[0-9A-Z]{16}/, 'llave de acceso AWS'],
-  [/(password|passwd|secret|token|api[_-]?key)\s*[:=]\s*['"][^'"\s]{8,}['"]/i, 'posible credencial escrita en el codigo'],
+  [
+    /(password|passwd|secret|token|api[_-]?key)\s*[:=]\s*['"][^'"\s]{8,}['"]/i,
+    'posible credencial escrita en el codigo',
+  ],
 ]
 
-const diff = sh('git diff --cached -U0 --diff-filter=ACM -- . ":(exclude)package-lock.json" ":(exclude)scripts/check-staged.mjs"')
+const diff = sh(
+  'git diff --cached -U0 --diff-filter=ACM -- . ":(exclude)package-lock.json" ":(exclude)scripts/check-staged.mjs"',
+)
 let current = ''
 for (const line of diff.split('\n')) {
   if (line.startsWith('+++ b/')) current = line.slice(6)
@@ -46,6 +54,8 @@ for (const line of diff.split('\n')) {
 if (problems.length) {
   console.error('\nHusky bloqueo el commit por malas practicas:\n')
   for (const p of new Set(problems)) console.error('  x ' + p)
-  console.error('\nCorrigelo y vuelve a intentar. Si algo es un falso positivo, avisame y ajustamos la regla.\n')
+  console.error(
+    '\nCorrigelo y vuelve a intentar. Si algo es un falso positivo, avisame y ajustamos la regla.\n',
+  )
   process.exit(1)
 }

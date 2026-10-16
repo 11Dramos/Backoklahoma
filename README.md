@@ -15,15 +15,15 @@ npm run dev    # levanta el servidor en http://localhost:4000
 
 ## Endpoints
 
-| Método | Ruta                      | Descripción                                                   |
-| ------ | ------------------------- | -------------------------------------------------------------- |
-| GET    | `/api/health`             | Chequeo de que el servidor está vivo                           |
-| GET    | `/api/menu`                | Categorías y productos disponibles                             |
-| POST   | `/api/orders`              | Crea un pedido (recalcula precios en el servidor, no confía en el cliente) |
-| GET    | `/api/orders`              | Lista todos los pedidos (para el panel)                        |
-| PATCH  | `/api/orders/:id/status`   | Cambia el estado de un pedido                                  |
-| POST   | `/api/delivery/quote`      | Cotización de delivery — **simulada**, pendiente de Uber Direct real |
-| POST   | `/api/payments/simulate`   | Simula la aprobación de un pago — pendiente de Webpay/Mercado Pago real |
+| Método | Ruta                     | Descripción                                                                |
+| ------ | ------------------------ | -------------------------------------------------------------------------- |
+| GET    | `/api/health`            | Chequeo de que el servidor está vivo                                       |
+| GET    | `/api/menu`              | Categorías y productos disponibles                                         |
+| POST   | `/api/orders`            | Crea un pedido (recalcula precios en el servidor, no confía en el cliente) |
+| GET    | `/api/orders`            | Lista todos los pedidos (para el panel)                                    |
+| PATCH  | `/api/orders/:id/status` | Cambia el estado de un pedido                                              |
+| POST   | `/api/delivery/quote`    | Cotización de delivery — **simulada**, pendiente de Uber Direct real       |
+| POST   | `/api/payments/simulate` | Simula la aprobación de un pago — pendiente de Webpay/Mercado Pago real    |
 
 ## Tiempo real
 

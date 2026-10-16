@@ -42,7 +42,10 @@ stages:
           - script: npm ci
             displayName: 'Instalar dependencias'
 
-          # Misma compuerta que Husky, pero que no se puede saltar con --no-verify.
+          # Mismas compuertas que Husky, pero que no se pueden saltar con --no-verify.
+          - script: npm run format:check
+            displayName: 'Formato (Prettier)'
+
           - script: npm run lint
             displayName: 'Lint (malas practicas)'
 
