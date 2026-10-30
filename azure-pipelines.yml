@@ -34,6 +34,10 @@ stages:
     jobs:
       - job: Test
         steps:
+          # fetchDepth 0: SonarCloud necesita el historial completo para atribuir lineas nuevas.
+          - checkout: self
+            fetchDepth: 0
+
           - task: NodeTool@0
             inputs:
               versionSpec: '22.x'
@@ -62,6 +66,26 @@ stages:
             artifact: coverage-back
             condition: succeededOrFailed()
             displayName: 'Publicar reporte HTML de cobertura'
+
+          # Analisis de calidad en SonarCloud (bugs, vulnerabilidades, code smells, duplicados y cobertura).
+          # Necesita las variables SONAR_TOKEN (secreta) y SONAR_ORGANIZATION del pipeline; si faltan, se omite
+          # sin romper el pipeline. Para que ademas bloquee el despliegue, cambia sonar.qualitygate.wait a true.
+          - script: |
+              if [ -z "$SONAR_TOKEN" ] || [ "$SONAR_TOKEN" = '$(SONAR_TOKEN)' ] || [ -z "$SONAR_ORGANIZATION" ] || [ "$SONAR_ORGANIZATION" = '$(SONAR_ORGANIZATION)' ]; then
+                echo "SonarCloud no configurado (faltan SONAR_TOKEN y SONAR_ORGANIZATION): se omite el analisis."
+                exit 0
+              fi
+              npx --yes @sonar/scan \
+                -Dsonar.host.url=https://sonarcloud.io \
+                -Dsonar.organization="$SONAR_ORGANIZATION" \
+                -Dsonar.projectKey="${SONAR_ORGANIZATION}_oklahoma-back" \
+                -Dsonar.projectName="Oklahoma Burgers back" \
+                -Dsonar.qualitygate.wait=false
+            displayName: 'Analisis SonarCloud'
+            condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
+            env:
+              SONAR_TOKEN: $(SONAR_TOKEN)
+              SONAR_ORGANIZATION: $(SONAR_ORGANIZATION)
 
   - stage: Package
     displayName: 'Empaquetar back + front'
